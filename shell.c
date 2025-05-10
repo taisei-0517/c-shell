@@ -21,13 +21,17 @@ Pid_state *pid_state;
 int pid_count = 0;
 pid_t fg_pid;
 
-void finish_pid(pid_t pid){
-    for (int i=0; i< pid_count; i++){
-        if(pid == pid_state[i].pid){
-            for (int j = i; j < pid_count; j++){
-                pid_state[j].pid = pid_state[j+1].pid;
-                pid_state[j].is_state = pid_state[j+1].is_state;
-                strncmp(pid_state[j].pid_name, pid_state[j+1].pid_name, strlen(pid_state[j+1].pid_name));
+void finish_pid(pid_t pid)
+{
+    for (int i = 0; i < pid_count; i++)
+    {
+        if (pid == pid_state[i].pid)
+        {
+            for (int j = i; j < pid_count; j++)
+            {
+                pid_state[j].pid = pid_state[j + 1].pid;
+                pid_state[j].is_state = pid_state[j + 1].is_state;
+                strncmp(pid_state[j].pid_name, pid_state[j + 1].pid_name, strlen(pid_state[j + 1].pid_name));
             }
         }
     }
@@ -65,56 +69,70 @@ void cor_arg(int *size, char *cmd[], char enter_cmd[])
 {
     char *p = strtok(enter_cmd, " ");
     int i = 0;
-    for (i = 0; p; i++) {
+    for (i = 0; p; i++)
+    {
         cmd[i] = p;
         p = strtok(NULL, " ");
     }
-    *size = i; 
+    *size = i;
 }
 
-void cm_job(){
-    for(int i = 0; i < pid_count; i++){
-        if(pid_state[i].is_state){
-            printf("pid: %d    %s\n", pid_state[i].pid , pid_state[i].pid_name);
+void cm_job()
+{
+    for (int i = 0; i < pid_count; i++)
+    {
+        if (pid_state[i].is_state)
+        {
+            printf("pid: %d    %s\n", pid_state[i].pid, pid_state[i].pid_name);
         }
     }
 }
 
-void cm_fg(char *cmd[]){
-    int pid = (int)strtol(cmd[strlen(*cmd)-1], NULL, 10);
+void cm_fg(char *cmd[])
+{
+    int pid = (int)strtol(cmd[strlen(*cmd) - 1], NULL, 10);
     int status;
-    for(int i = 0; i < pid_count; i++)
+    for (int i = 0; i < pid_count; i++)
     {
-        if(pid_state[i].is_state && pid_state[i].pid == pid){
-           pid_state[i].is_state = false;
+        if (pid_state[i].is_state && pid_state[i].pid == pid)
+        {
+            pid_state[i].is_state = false;
         }
     }
     waitpid(pid, &status, 0);
 }
 
-bool check_bg(char *cmd[], int size_cmd){
-    if (strncmp(cmd[size_cmd-1], "&", 1) == 0)
+bool check_bg(char *cmd[], int size_cmd)
+{
+    if (strncmp(cmd[size_cmd - 1], "&", 1) == 0)
     {
-        cmd[size_cmd-1] = NULL;
+        cmd[size_cmd - 1] = NULL;
         return true;
     }
     return false;
 }
 
-bool check_innercmd(char *inners[], char *cmd[]){
+bool check_innercmd(char *inners[], char *cmd[])
+{
     if (strncmp(cmd[0], inners[0], strlen(inners[1])) == 0)
     {
-        //exit
+        // exit
         exit(0);
-    } else if (strncmp(cmd[0], inners[1], strlen(inners[1])) == 0){
-        //quit
+    }
+    else if (strncmp(cmd[0], inners[1], strlen(inners[1])) == 0)
+    {
+        // quit
         exit(0);
-    } else if (strncmp(cmd[0], inners[2], strlen(inners[2])) == 0){
-        //jobs
+    }
+    else if (strncmp(cmd[0], inners[2], strlen(inners[2])) == 0)
+    {
+        // jobs
         cm_job();
         return true;
-    } else if (strncmp(cmd[0], inners[3], strlen(inners[3])) == 0){
-        //fg
+    }
+    else if (strncmp(cmd[0], inners[3], strlen(inners[3])) == 0)
+    {
+        // fg
         cm_fg(cmd);
         return true;
     }
@@ -127,7 +145,6 @@ int main(void)
     char *innercmds[] = {"exit", "quit", "jobs", "fg"};
     char *env_list;
 
-
     while (1)
     {
         signal(SIGCHLD, finish_handler);
@@ -139,11 +156,11 @@ int main(void)
         char enter_cmd[MAX_cmd] = {0};
         char tmp_cmd[MAX_cmd] = {0};
         fgets(enter_cmd, MAX_cmd, stdin);
-        if (strncmp(enter_cmd, "\n", 2) == 0) {
+        if (strncmp(enter_cmd, "\n", 2) == 0)
+        {
             continue;
         }
         enter_cmd[strlen(enter_cmd) - 1] = '\0'; // 空白削除
-        printf("enter_cmd: %s\n", enter_cmd);
 
         strncpy(tmp_cmd, enter_cmd, strlen(enter_cmd));
 
@@ -152,12 +169,10 @@ int main(void)
 
         cor_arg(&size_cmd, cmd_execv, enter_cmd);
 
-        printf("enter_cmd: %s\n", enter_cmd);
-        printf("size_cmd: %d\n", size_cmd);
-
         bool is_bg = check_bg(cmd_execv, size_cmd);
 
-        if (check_innercmd(innercmds, cmd_execv)){
+        if (check_innercmd(innercmds, cmd_execv))
+        {
             continue;
         }
 
