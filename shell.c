@@ -60,11 +60,6 @@ void finish_handler(int sig)
     }
 }
 
-void kill_handler(int sig)
-{
-    kill(fg_pid, sig);
-}
-
 void cor_arg(int *size, char *cmd[], char enter_cmd[])
 {
     char *p = strtok(enter_cmd, " ");
@@ -102,6 +97,20 @@ void cm_fg(char *cmd[])
     waitpid(pid, &status, 0);
 }
 
+void cm_type(char *cmd[], char *inners[]){
+    for (int i=0; inners[i] != NULL; i++){
+        if (strncmp(inners[i], cmd[0], strlen(cmd[0])) == 0){
+            printf("%s is a shell builtin\n", cmd[1]);
+            return;
+        }
+    }
+    printf("%s is not a shell builtin\n", cmd[1]);
+}
+
+void cm_echo(char *cmd[]){
+    printf("%s\n", cmd[1]);
+}
+
 bool check_bg(char *cmd[], int size_cmd)
 {
     if (strncmp(cmd[size_cmd - 1], "&", 1) == 0)
@@ -114,26 +123,33 @@ bool check_bg(char *cmd[], int size_cmd)
 
 bool check_innercmd(char *inners[], char *cmd[])
 {
-    if (strncmp(cmd[0], inners[0], strlen(inners[1])) == 0)
+    if (strncmp(cmd[0], inners[0], strlen(inners[0])) == 0)
     {
         // exit
         exit(0);
     }
     else if (strncmp(cmd[0], inners[1], strlen(inners[1])) == 0)
     {
-        // quit
-        exit(0);
-    }
-    else if (strncmp(cmd[0], inners[2], strlen(inners[2])) == 0)
-    {
         // jobs
         cm_job();
         return true;
     }
-    else if (strncmp(cmd[0], inners[3], strlen(inners[3])) == 0)
+    else if (strncmp(cmd[0], inners[2], strlen(inners[2])) == 0)
     {
         // fg
         cm_fg(cmd);
+        return true;
+    }
+    else if (strncmp(cmd[0], inners[3], strlen(inners[3])) == 0)
+    {
+        // type
+        cm_type(cmd, inners);
+        return true;
+    }
+    else if (strncmp(cmd[0], inners[4], strlen(inners[4])) == 0)
+    {
+        // echo
+        cm_echo(cmd);
         return true;
     }
     return false;
@@ -142,13 +158,12 @@ bool check_innercmd(char *inners[], char *cmd[])
 int main(void)
 {
     pid_state = malloc(sizeof(Pid_state) * MAX_pid);
-    char *innercmds[] = {"exit", "quit", "jobs", "fg"};
+    char *innercmds[] = {"exit", "jobs", "fg", "type", "echo", NULL};
     char *env_list;
 
     while (1)
     {
         signal(SIGCHLD, finish_handler);
-        signal(SIGINT, kill_handler);
 
         // プロンプトが早く表示されるため調節
         usleep(10000);
@@ -183,7 +198,6 @@ int main(void)
         if (pid == 0)
         {
             // 子プロセス
-            etpgid(0, 0);
             execv(cmd_execv[0], cmd_execv);
             exit(0);
         }
